@@ -73,8 +73,6 @@ RUN pip install --no-cache-dir \
       "timm==0.9.10" \
       "soundfile==0.12.1" \
       "librosa>=0.10" \
-      "decord" \
-      "moviepy" \
       "aiofiles==23.2.1" \
       "onnxruntime" \
       "fastapi" \
