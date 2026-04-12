@@ -85,10 +85,18 @@ RUN pip install --no-cache-dir \
 # transformers' dynamic_module_utils.check_imports enforces even when
 # attn_implementation='sdpa' is explicitly selected. Ship an empty stub
 # package so the import check passes; sdpa is the actual runtime path.
-RUN SITE=$(python -c "import site; print(site.getsitepackages()[0])") && \
-    mkdir -p "$SITE/flash_attn" "$SITE/flash_attn-2.7.4.post1.dist-info" && \
-    printf 'def __getattr__(n): raise ImportError("flash_attn stub: install real flash_attn for %s" % n)\n' > "$SITE/flash_attn/__init__.py" && \
-    printf 'Metadata-Version: 2.1\nName: flash_attn\nVersion: 2.7.4.post1\n' > "$SITE/flash_attn-2.7.4.post1.dist-info/METADATA"
+RUN python - <<'PY'
+import os, site
+sp = site.getsitepackages()[0]
+pkg = os.path.join(sp, "flash_attn")
+dist = os.path.join(sp, "flash_attn-2.7.4.post1.dist-info")
+os.makedirs(pkg, exist_ok=True)
+os.makedirs(dist, exist_ok=True)
+with open(os.path.join(pkg, "__init__.py"), "w") as f:
+    f.write('def __getattr__(name):\n    raise ImportError("flash_attn stub: real flash_attn not installed; attr=" + name)\n')
+with open(os.path.join(dist, "METADATA"), "w") as f:
+    f.write("Metadata-Version: 2.1\nName: flash_attn\nVersion: 2.7.4.post1\n")
+PY
 
 # Frontend static bundle
 COPY --from=frontend-build /src/web_demos/minicpm-o_2.6/web_server/dist /var/www/html
