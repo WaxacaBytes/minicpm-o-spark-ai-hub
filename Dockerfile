@@ -81,6 +81,15 @@ RUN pip install --no-cache-dir \
       "pydantic>=2.10" \
       "numpy<2"
 
+# MiniCPM-o's remote modeling code has a top-level `import flash_attn` that
+# transformers' dynamic_module_utils.check_imports enforces even when
+# attn_implementation='sdpa' is explicitly selected. Ship an empty stub
+# package so the import check passes; sdpa is the actual runtime path.
+RUN SITE=$(python -c "import site; print(site.getsitepackages()[0])") && \
+    mkdir -p "$SITE/flash_attn" "$SITE/flash_attn-2.7.4.post1.dist-info" && \
+    printf 'def __getattr__(n): raise ImportError("flash_attn stub: install real flash_attn for %s" % n)\n' > "$SITE/flash_attn/__init__.py" && \
+    printf 'Metadata-Version: 2.1\nName: flash_attn\nVersion: 2.7.4.post1\n' > "$SITE/flash_attn-2.7.4.post1.dist-info/METADATA"
+
 # Frontend static bundle
 COPY --from=frontend-build /src/web_demos/minicpm-o_2.6/web_server/dist /var/www/html
 
