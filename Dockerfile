@@ -92,8 +92,34 @@ pkg = os.path.join(sp, "flash_attn")
 dist = os.path.join(sp, "flash_attn-2.7.4.post1.dist-info")
 os.makedirs(pkg, exist_ok=True)
 os.makedirs(dist, exist_ok=True)
+stub_init = '''\
+"""flash_attn stub — real flash_attn is not installed.
+MiniCPM-o's remote modeling code does top-level `from flash_attn import ...`;
+we satisfy the import by returning no-op callables that raise if actually invoked.
+The model is loaded with attn_implementation=\\"sdpa\\", so these are never called.
+"""
+import sys, types
+
+def _make_stub(name):
+    def _stub(*a, **kw):
+        raise RuntimeError(
+            f"flash_attn.{name} was called, but flash_attn is stubbed. "
+            "Ensure attn_implementation=\\"sdpa\\" is used."
+        )
+    _stub.__name__ = name
+    return _stub
+
+def __getattr__(name):
+    return _make_stub(name)
+
+# Pre-populate common submodules so `from flash_attn.bert_padding import ...` works.
+for _sub in ("bert_padding", "flash_attn_interface", "layers", "ops", "modules"):
+    _m = types.ModuleType(f"flash_attn.{_sub}")
+    _m.__getattr__ = (lambda _n=_sub: (lambda name: _make_stub(f"{_n}.{name}")))()
+    sys.modules[f"flash_attn.{_sub}"] = _m
+'''
 with open(os.path.join(pkg, "__init__.py"), "w") as f:
-    f.write('def __getattr__(name):\n    raise ImportError("flash_attn stub: real flash_attn not installed; attr=" + name)\n')
+    f.write(stub_init)
 with open(os.path.join(dist, "METADATA"), "w") as f:
     f.write("Metadata-Version: 2.1\nName: flash_attn\nVersion: 2.7.4.post1\n")
 PY
