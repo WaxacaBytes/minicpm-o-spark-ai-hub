@@ -106,6 +106,15 @@ flash_attn_with_kvcache = _stub
 '''
 with open(os.path.join(pkg, "__init__.py"), "w") as f:
     f.write(stub_init)
+bert_padding = '''\
+def _stub(*a, **kw):
+    raise RuntimeError("flash_attn.bert_padding called but stubbed; use sdpa path")
+index_first_axis = _stub
+pad_input = _stub
+unpad_input = _stub
+'''
+with open(os.path.join(pkg, "bert_padding.py"), "w") as f:
+    f.write(bert_padding)
 with open(os.path.join(dist, "METADATA"), "w") as f:
     f.write("Metadata-Version: 2.1\nName: flash_attn\nVersion: 2.7.4.post1\n")
 PY
