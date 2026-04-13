@@ -3,6 +3,10 @@ set -euo pipefail
 
 cd /app/web_demos/minicpm-o_2.6
 
+# model_server.py hardcodes `assets/ref_audios/...` relative to cwd;
+# upstream ships them under /app/assets. Symlink so it finds them.
+ln -sfn /app/assets /app/web_demos/minicpm-o_2.6/assets
+
 echo "[minicpm-o] starting model_server on :32550 (model=${MINICPM_MODEL})"
 python model_server.py --port 32550 --model "${MINICPM_MODEL}" &
 MODEL_PID=$!
